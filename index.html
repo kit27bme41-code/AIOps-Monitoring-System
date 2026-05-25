@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIOps Live Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e2e;
+            color: #cdd6f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 40px;
+        }
+        .dashboard-container {
+            background-color: #313244;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 900px;
+        }
+        h1 {
+            margin-top: 0;
+            text-align: center;
+            color: #89b4fa;
+        }
+        .status-legend {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .dot {
+            height: 12px; width: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 15px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <h1>🚀 Live API Health Dashboard</h1>
+        <div class="status-legend">
+            <span class="dot" style="background-color: #a6e3a1;"></span> Healthy (200s)
+            <span class="dot" style="background-color: #f38ba8;"></span> Anomaly Detected (400s/500s)
+        </div>
+        
+        <canvas id="healthChart"></canvas>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('healthChart').getContext('2d');
+        
+        // Initialize the Chart
+        const healthChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'API Latency (ms)',
+                    data: [],
+                    borderColor: '#89b4fa',
+                    backgroundColor: 'rgba(137, 180, 250, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4, // Adds a nice curve to the line
+                    fill: true
+                }]
+            },
+            options: {
+                animation: false, // Turn off animation for snappy live updates
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        grid: { color: '#45475a' },
+                        ticks: { color: '#bac2de' }
+                    },
+                    x: {
+                        grid: { color: '#45475a' },
+                        ticks: { color: '#bac2de' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#bac2de' } }
+                }
+            }
+        });
+
+        // Function to fetch data and update chart
+        async function updateDashboard() {
+            try {
+                const response = await fetch('/api/logs');
+                const logs = await response.json();
+                
+                // Update X-axis (Timestamps)
+                healthChart.data.labels = logs.map(log => log.time);
+                
+                // Update Y-axis (Latency)
+                healthChart.data.datasets[0].data = logs.map(log => log.latency);
+                
+                // Dynamic styling: If status >= 400, make the dot Big and Red. Otherwise, normal and Green.
+                healthChart.data.datasets[0].pointBackgroundColor = logs.map(log => log.status >= 400 ? '#f38ba8' : '#a6e3a1');
+                healthChart.data.datasets[0].pointBorderColor = logs.map(log => log.status >= 400 ? '#f38ba8' : '#a6e3a1');
+                healthChart.data.datasets[0].pointRadius = logs.map(log => log.status >= 400 ? 8 : 4);
+                
+                healthChart.update();
+            } catch (error) {
+                console.error("Failed to fetch logs:", error);
+            }
+        }
+
+        // Fetch immediately, then repeat every 2 seconds
+        updateDashboard();
+        setInterval(updateDashboard, 2000);
+    </script>
+</body>
+</html>
