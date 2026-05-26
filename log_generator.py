@@ -50,7 +50,7 @@ if __name__ == "__main__":
             # Send the log to our FastAPI receiver
             try:
                 # Timeout added so it doesn't hang forever if the receiver is down
-                requests.post("http://localhost:8000/logs", json=log, timeout=2)
+                requests.post("https://ai-ops-dashboard-d8se.onrender.com/logs", json=log, timeout=2)
             except requests.exceptions.ConnectionError:
                 print("Could not connect. Is the receiver.py server running?")
             except requests.exceptions.Timeout:
